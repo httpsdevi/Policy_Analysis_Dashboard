@@ -1,0 +1,1384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Policy Analysis Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        /* Global Reset and Body Styling */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #2d3748;
+        }
+
+        /* Dashboard Container */
+        .dashboard-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header Section */
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(15px);
+            border-radius: 24px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Header shimmer animation */
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2, #f093fb);
+            animation: shimmer 3s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .header h1 {
+            font-size: 2.8rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        /* Badges for technologies used */
+        .tableau-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, #1f77b4, #2ca02c);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin: 10px 0;
+        }
+
+        .python-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, #3776ab, #ffd43b);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin: 10px 0 10px 10px;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            color: #64748b;
+            margin-bottom: 25px;
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+        }
+
+        /* Control Panel for Filters */
+        .control-panel {
+            background: rgba(248, 250, 252, 0.8);
+            border-radius: 16px;
+            padding: 20px;
+            margin-top: 20px;
+            animation: fadeInUp 0.8s ease-out 0.4s both;
+        }
+
+        .filter-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .filter-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .reset-filters {
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .reset-filters:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .filter-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 25px;
+            align-items: end;
+        }
+
+        .filter-item {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .filter-item label {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #475569;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .filter-item select {
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            background: white;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .filter-item select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .search-container {
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 16px 12px 40px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+        }
+
+        /* Statistics Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            transition: left 0.6s;
+        }
+
+        .stat-card:hover::before {
+            left: 100%;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-10px) scale(1.03);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+        }
+
+        .stat-card.active {
+            border: 2px solid #667eea;
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .stat-label {
+            font-size: 0.95rem;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+
+        .stat-trend {
+            font-size: 0.9rem;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .trend-up {
+            background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+            color: #065f46;
+        }
+
+        .trend-down {
+            background: linear-gradient(135deg, #fee2e2, #fecaca);
+            color: #991b1b;
+        }
+
+        /* Chart Grid and Containers */
+        .chart-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .chart-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(15px);
+            border-radius: 24px;
+            padding: 35px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .chart-container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.15);
+        }
+
+        .chart-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 25px;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .chart-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chart-btn {
+            padding: 6px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+        }
+
+        .chart-btn:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .full-width {
+            grid-column: span 2;
+        }
+
+        /* Data Table */
+        .data-table {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(15px);
+            border-radius: 24px;
+            padding: 35px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            overflow: hidden;
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .table-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .export-btn, .refresh-btn {
+            padding: 8px 16px;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            background: white;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .export-btn:hover, .refresh-btn:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+
+        .table-container {
+            overflow-x: auto;
+            border-radius: 12px;
+            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 16px 20px;
+            border-bottom: 1px solid #f1f5f9;
+            transition: all 0.3s ease;
+        }
+
+        th {
+            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+            font-weight: 600;
+            color: #475569;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        tr:hover {
+            background: #f8fafc;
+            transform: scale(1.01);
+        }
+
+        /* Risk Badges in Table */
+        .risk-high { 
+            color: #dc2626; 
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 6px;
+            background: rgba(220, 38, 38, 0.1);
+        }
+        .risk-medium { 
+            color: #d97706; 
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 6px;
+            background: rgba(217, 119, 6, 0.1);
+        }
+        .risk-low { 
+            color: #059669; 
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 6px;
+            background: rgba(5, 150, 105, 0.1);
+        }
+
+        /* Table Action Buttons */
+        .action-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+            margin-right: 5px;
+        }
+
+        .action-view {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .action-edit {
+            background: #10b981;
+            color: white;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Insight Cards */
+        .insight-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+
+        .insight-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            border-left: 5px solid #667eea;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .insight-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+        }
+
+        .insight-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .insight-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #667eea;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.8rem;
+        }
+
+        .insight-text {
+            color: #64748b;
+            line-height: 1.7;
+            margin-bottom: 15px;
+        }
+
+        .insight-action {
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+        }
+
+        .insight-action:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1000; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            background: rgba(0, 0, 0, 0.5); /* Black w/ opacity */
+            backdrop-filter: blur(5px); /* Blur background */
+            display: flex; /* Use flexbox for centering */
+            align-items: center; /* Center vertically */
+            justify-content: center; /* Center horizontally */
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            width: 80%;
+            max-width: 600px;
+            position: relative;
+            animation: modalSlideIn 0.3s ease-out;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .close {
+            position: absolute;
+            right: 20px;
+            top: 20px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #64748b;
+            transition: color 0.3s ease;
+        }
+
+        .close:hover {
+            color: #dc2626;
+        }
+
+        /* Loading Spinner */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Fade In Up Animation */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Tooltip Styles */
+        .tooltip {
+            position: relative;
+            cursor: help;
+        }
+
+        .tooltip::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: calc(100% + 10px); /* Position above the element */
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .tooltip:hover::after {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Notification Toast */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #10b981;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transform: translateX(400px); /* Start off-screen */
+            transition: transform 0.3s ease-out;
+            z-index: 1001;
+        }
+
+        .notification.show {
+            transform: translateX(0); /* Slide in */
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 768px) {
+            .chart-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .full-width {
+                grid-column: span 1;
+            }
+            
+            .filter-group {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .modal-content {
+                width: 95%;
+                margin: 10% auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="header">
+            <h1>Policy Analysis Dashboard</h1>
+            <div style="display: flex; align-items: center; flex-wrap: wrap;">
+                <div class="tableau-badge">
+                    📊 Built with Tableau Public
+                </div>
+                <div class="python-badge">
+                    🐍 Powered by Python ML
+                </div>
+            </div>
+            <p>Advanced Insurance Analytics | ML-Driven Risk Assessment | Real-time Decision Support</p>
+            <div class="control-panel">
+                <div class="filter-header">
+                    <div class="filter-title">🎛️ Tableau-Style Filters</div>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="reset-filters" onclick="resetAllFilters()">🔄 Reset All</button>
+                        <button class="reset-filters" onclick="exportToTableau()" style="background: linear-gradient(135deg, #1f77b4, #2ca02c);">📊 Export to Tableau</button>
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <div class="filter-item">
+                        <label>📅 Time Period</label>
+                        <select id="timePeriod" onchange="updateDashboard()">
+                            <option value="ytd">Year to Date</option>
+                            <option value="q4">Q4 2024</option>
+                            <option value="q3">Q3 2024</option>
+                            <option value="annual">Annual 2024</option>
+                        </select>
+                    </div>
+                    <div class="filter-item">
+                        <label>📋 Policy Type</label>
+                        <select id="policyType" onchange="updateDashboard()">
+                            <option value="all">All Policies</option>
+                            <option value="term">Term Life</option>
+                            <option value="whole">Whole Life</option>
+                            <option value="universal">Universal Life</option>
+                        </select>
+                    </div>
+                    <div class="filter-item">
+                        <label>🌍 Region</label>
+                        <select id="region" onchange="updateDashboard()">
+                            <option value="all">All Regions</option>
+                            <option value="north">North</option>
+                            <option value="south">South</option>
+                            <option value="east">East</option>
+                            <option value="west">West</option>
+                        </select>
+                    </div>
+                    <div class="filter-item">
+                        <label>🔍 Search Policies</label>
+                        <div class="search-container">
+                            <span class="search-icon">🔍</span>
+                            <input type="text" class="search-input" placeholder="Search by Policy ID or Customer..." onkeyup="searchTable()">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card tooltip" data-tooltip="Click to drill down into premium details" onclick="highlightCard(this)">
+                <div class="stat-value" style="color: #667eea;">$2.4B</div>
+                <div class="stat-label">Total Premium Volume</div>
+                <div class="stat-trend trend-up">� +12.3% vs last quarter</div>
+            </div>
+            <div class="stat-card tooltip" data-tooltip="Click to view retention analysis" onclick="highlightCard(this)">
+                <div class="stat-value" style="color: #10b981;">94.2%</div>
+                <div class="stat-label">Policy Retention Rate</div>
+                <div class="stat-trend trend-up">📈 +2.1% improvement</div>
+            </div>
+            <div class="stat-card tooltip" data-tooltip="Click to see risk breakdown" onclick="highlightCard(this)">
+                <div class="stat-value" style="color: #f59e0b;">5.8%</div>
+                <div class="stat-label">Lapse Risk Score</div>
+                <div class="stat-trend trend-down">📉 -0.9% reduction</div>
+            </div>
+            <div class="stat-card tooltip" data-tooltip="Click to analyze claims data" onclick="highlightCard(this)">
+                <div class="stat-value" style="color: #8b5cf6;">1.23</div>
+                <div class="stat-label">Claims Ratio</div>
+                <div class="stat-trend trend-up">✅ Within target range</div>
+            </div>
+        </div>
+
+        <div class="chart-grid">
+            <div class="chart-container">
+                <div class="chart-title">
+                    Premium Distribution by Age Group
+                    <div class="chart-actions">
+                        <button class="chart-btn" onclick="downloadChart('ageChart')">📥 Export</button>
+                        <button class="chart-btn" onclick="refreshChart('ageChart')">🔄 Refresh</button>
+                    </div>
+                </div>
+                <canvas id="ageChart" width="400" height="300"></canvas>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title">
+                    Lapse Risk Segmentation
+                    <div class="chart-actions">
+                        <button class="chart-btn" onclick="downloadChart('riskChart')">📥 Export</button>
+                        <button class="chart-btn" onclick="refreshChart('riskChart')">🔄 Refresh</button>
+                    </div>
+                </div>
+                <canvas id="riskChart" width="400" height="300"></canvas>
+            </div>
+            <div class="chart-container full-width">
+                <div class="chart-title">
+                    Monthly Premium Trends & AI Predictions
+                    <div class="chart-actions">
+                        <button class="chart-btn" onclick="downloadChart('trendChart')">📥 Export</button>
+                        <button class="chart-btn" onclick="togglePredictions()">🤖 Toggle AI</button>
+                        <button class="chart-btn" onclick="refreshChart('trendChart')">🔄 Refresh</button>
+                    </div>
+                </div>
+                <canvas id="trendChart" width="800" height="400"></canvas>
+            </div>
+        </div>
+
+        <div class="data-table">
+            <div class="table-header">
+                <div class="chart-title">🚨 High-Risk Policy Analysis</div>
+                <div class="table-actions">
+                    <button class="export-btn" onclick="exportTable()">📊 Export CSV</button>
+                    <button class="refresh-btn" onclick="refreshTable()">🔄 Refresh Data</button>
+                </div>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Policy ID</th>
+                            <th>Policyholder</th>
+                            <th>Premium Range</th>
+                            <th>Risk Score</th>
+                            <th>Claims Ratio</th>
+                            <th>Age Group</th>
+                            <th>Region</th>
+                            <th>Action Required</th>
+                            <th>Operations</th>
+                        </tr>
+                    </thead>
+                    <tbody id="policyTable">
+                        <tr>
+                            <td>POL-2024-1001</td>
+                            <td>Anonymous Customer A</td>
+                            <td>$50K - $100K</td>
+                            <td class="risk-high">8.7</td>
+                            <td>2.1</td>
+                            <td>45-54</td>
+                            <td>North</td>
+                            <td>Retention Campaign</td>
+                            <td>
+                                <button class="action-btn action-view" onclick="viewPolicy('POL-2024-1001')">👁️ View</button>
+                                <button class="action-btn action-edit" onclick="editPolicy('POL-2024-1001')">✏️ Edit</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>POL-2024-1002</td>
+                            <td>Anonymous Customer B</td>
+                            <td>$25K - $50K</td>
+                            <td class="risk-medium">6.2</td>
+                            <td>1.8</td>
+                            <td>35-44</td>
+                            <td>West</td>
+                            <td>Monitor Closely</td>
+                            <td>
+                                <button class="action-btn action-view" onclick="viewPolicy('POL-2024-1002')">👁️ View</button>
+                                <button class="action-btn action-edit" onclick="editPolicy('POL-2024-1002')">✏️ Edit</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>POL-2024-1003</td>
+                            <td>Anonymous Customer C</td>
+                            <td>$100K+</td>
+                            <td class="risk-high">9.1</td>
+                            <td>2.5</td>
+                            <td>55-64</td>
+                            <td>East</td>
+                            <td>Immediate Review</td>
+                            <td>
+                                <button class="action-btn action-view" onclick="viewPolicy('POL-2024-1003')">👁️ View</button>
+                                <button class="action-btn action-edit" onclick="editPolicy('POL-2024-1003')">✏️ Edit</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>POL-2024-1004</td>
+                            <td>Anonymous Customer D</td>
+                            <td>$10K - $25K</td>
+                            <td class="risk-low">3.4</td>
+                            <td>0.9</td>
+                            <td>25-34</td>
+                            <td>South</td>
+                            <td>Standard Follow-up</td>
+                            <td>
+                                <button class="action-btn action-view" onclick="viewPolicy('POL-2024-1004')">👁️ View</button>
+                                <button class="action-btn action-edit" onclick="editPolicy('POL-2024-1004')">✏️ Edit</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>POL-2024-1005</td>
+                            <td>Anonymous Customer E</td>
+                            <td>$50K - $100K</td>
+                            <td class="risk-medium">7.3</td>
+                            <td>1.6</td>
+                            <td>45-54</td>
+                            <td>North</td>
+                            <td>Risk Assessment</td>
+                            <td>
+                                <button class="action-btn action-view" onclick="viewPolicy('POL-2024-1005')">👁️ View</button>
+                                <button class="action-btn action-edit" onclick="editPolicy('POL-2024-1005')">✏️ Edit</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="insight-cards">
+            <div class="insight-card">
+                <div class="insight-title">
+                    <div class="insight-icon">💡</div>
+                    New Lapse Risk Trend
+                </div>
+                <div class="insight-text">
+                    A significant increase in lapse risk has been detected among policyholders in the **North region** aged **45-54**. The machine learning model suggests proactive outreach campaigns to address this.
+                </div>
+                <button class="insight-action">Generate Report</button>
+            </div>
+            <div class="insight-card">
+                <div class="insight-title">
+                    <div class="insight-icon">🎯</div>
+                    Premium Growth Opportunity
+                </div>
+                <div class="insight-text">
+                    Policies in the **Universal Life** category are showing a <strong>15% higher premium volume growth</strong> than other types. Consider a marketing focus on this product line for Q4.
+                </div>
+                <button class="insight-action">Launch Campaign</button>
+            </div>
+            <div class="insight-card">
+                <div class="insight-title">
+                    <div class="insight-icon">⚠️</div>
+                    Claims Ratio Anomaly
+                </div>
+                <div class="insight-text">
+                    An anomaly has been flagged in the **Claims Ratio** for policies with premium ranges of <strong>$100K+</strong>. A deep-dive analysis is recommended to understand the underlying causes.
+                </div>
+                <button class="insight-action">Start Deep Dive</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- The Modal for Policy Details -->
+    <div id="policyModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2>Policy Details</h2>
+            <div id="modalContent">
+                <!-- Content will be dynamically inserted here -->
+                <p>Loading...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notification-container" class="notification"></div>
+
+    <script>
+        // Sample data for charts (in a real app, this would come from an API)
+        const sampleData = {
+            ageChart: {
+                labels: ['18-24', '25-34', '35-44', '45-54', '55-64', '65+'],
+                datasets: [{
+                    label: 'Premium Volume ($M)',
+                    data: [150, 420, 750, 810, 500, 250],
+                    backgroundColor: [
+                        '#667eea',
+                        '#764ba2',
+                        '#f093fb',
+                        '#6be585',
+                        '#30e3ca',
+                        '#20bf55'
+                    ],
+                    hoverOffset: 4
+                }]
+            },
+            riskChart: {
+                labels: ['Low Risk', 'Medium Risk', 'High Risk'],
+                datasets: [{
+                    label: 'Policy Count',
+                    data: [2500, 1200, 350],
+                    backgroundColor: [
+                        '#10b981',
+                        '#f59e0b',
+                        '#dc2626'
+                    ],
+                    hoverOffset: 4
+                }]
+            },
+            trendChart: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'],
+                datasets: [{
+                    label: 'Actual Premiums',
+                    data: [350, 380, 410, 450, 480, 510, 550, 580],
+                    borderColor: '#667eea',
+                    backgroundColor: 'rgba(102, 126, 234, 0.2)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            }
+        };
+
+        let charts = {};
+        let predictionsVisible = false;
+
+        /**
+         * Initializes all Chart.js instances on the dashboard.
+         * This function is called once when the page loads.
+         */
+        function initializeCharts() {
+            // Get context for Age Distribution Chart
+            const ctxAge = document.getElementById('ageChart').getContext('2d');
+            charts.ageChart = new Chart(ctxAge, {
+                type: 'doughnut',
+                data: sampleData.ageChart,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false, // Allow canvas to resize freely
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                boxWidth: 15,
+                                padding: 20,
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    // Format data as currency
+                                    if (context.raw !== null) {
+                                        label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', notation: 'compact' }).format(context.raw * 1000000);
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Get context for Lapse Risk Segmentation Chart
+            const ctxRisk = document.getElementById('riskChart').getContext('2d');
+            charts.riskChart = new Chart(ctxRisk, {
+                type: 'pie',
+                data: sampleData.riskChart,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                boxWidth: 15,
+                                padding: 20,
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Get context for Monthly Premium Trends & AI Predictions Chart
+            const ctxTrend = document.getElementById('trendChart').getContext('2d');
+            charts.trendChart = new Chart(ctxTrend, {
+                type: 'line',
+                data: sampleData.trendChart,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Premium Volume ($M)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Call the initialization function when the window loads
+        window.onload = function() {
+            initializeCharts();
+            updateDashboard(); // Initial load of the dashboard to apply default filters
+        };
+
+        /**
+         * Highlights the clicked stat card and removes highlighting from others.
+         * @param {HTMLElement} card - The stat card element to highlight.
+         */
+        function highlightCard(card) {
+            document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active'));
+            card.classList.add('active');
+            showNotification(`Analytics for '${card.querySelector('.stat-label').textContent}' highlighted!`);
+        }
+
+        /**
+         * Updates the dashboard content based on selected filter values.
+         * In a real application, this would involve fetching new data from a server.
+         */
+        function updateDashboard() {
+            const timePeriod = document.getElementById('timePeriod').value;
+            const policyType = document.getElementById('policyType').value;
+            const region = document.getElementById('region').value;
+
+            console.log(`Updating dashboard for: Time Period: ${timePeriod}, Policy Type: ${policyType}, Region: ${region}`);
+            
+            // Simulate data updates for charts and table based on filters
+            // For a real app, you would have an API call here to get filtered data
+            // and then update chart.data and table.innerHTML accordingly.
+            refreshChart('ageChart');
+            refreshChart('riskChart');
+            refreshChart('trendChart');
+            refreshTable(); // Also refresh the table
+        }
+
+        /**
+         * Resets all filter selections to their default values.
+         */
+        function resetAllFilters() {
+            document.getElementById('timePeriod').value = 'ytd';
+            document.getElementById('policyType').value = 'all';
+            document.getElementById('region').value = 'all';
+            document.querySelector('.search-input').value = '';
+            
+            // Remove active state from any highlighted stat cards
+            document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active'));
+
+            showNotification('All filters reset! 🔄');
+            updateDashboard(); // Re-render dashboard with reset filters
+        }
+
+        /**
+         * Simulates exporting the current dashboard data to Tableau.
+         */
+        function exportToTableau() {
+            const filters = {
+                timePeriod: document.getElementById('timePeriod').value,
+                policyType: document.getElementById('policyType').value,
+                region: document.getElementById('region').value
+            };
+            console.log("Preparing data for Tableau export with current filters:", filters);
+            showNotification('Data prepared for Tableau export! 📊');
+        }
+
+        /**
+         * Filters the policy table based on the search input.
+         */
+        function searchTable() {
+            const input = document.querySelector('.search-input');
+            const filter = input.value.toUpperCase();
+            const table = document.getElementById('policyTable');
+            const tr = table.getElementsByTagName('tr');
+
+            // Loop through all table rows, and hide those that don't match the search query
+            for (let i = 0; i < tr.length; i++) {
+                let found = false;
+                // Loop through all table cells in the row (excluding the last 'Operations' column)
+                for (let j = 0; j < tr[i].cells.length - 1; j++) {
+                    const td = tr[i].cells[j];
+                    if (td) {
+                        const txtValue = td.textContent || td.innerText;
+                        if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                            found = true;
+                            break; // Found a match in this row, no need to check other cells
+                        }
+                    }
+                }
+                tr[i].style.display = found ? '' : 'none'; // Show/hide row
+            }
+        }
+
+        /**
+         * Displays policy details in a modal.
+         * @param {string} policyId - The ID of the policy to display.
+         */
+        function viewPolicy(policyId) {
+            const modal = document.getElementById('policyModal');
+            const modalContent = document.getElementById('modalContent');
+            
+            // Show loading state
+            modalContent.innerHTML = `<p>Loading details for <strong>${policyId}</strong>... <span class="loading"></span></p>`;
+            modal.style.display = 'flex'; // Use flex to center
+
+            // Simulate fetching policy data from an API
+            setTimeout(() => {
+                modalContent.innerHTML = `
+                    <h3>Details for Policy ID: ${policyId}</h3>
+                    <p><strong>Status:</strong> Active</p>
+                    <p><strong>Policy Type:</strong> Term Life</p>
+                    <p><strong>Start Date:</strong> Jan 15, 2024</p>
+                    <p><strong>Policyholder:</strong> John Doe</p>
+                    <p><strong>Premium:</strong> $75,000</p>
+                    <p><strong>Risk Assessment:</strong> High (8.7)</p>
+                    <p><strong>Recommendations:</strong> Contact customer to review policy options and offer retention incentives. Consider a personalized financial review.</p>
+                `;
+            }, 1000); // Simulate network delay
+        }
+
+        /**
+         * Closes the policy details modal.
+         */
+        function closeModal() {
+            const modal = document.getElementById('policyModal');
+            modal.style.display = 'none';
+        }
+
+        // Close modal when clicking outside of the modal content
+        window.onclick = function(event) {
+            const modal = document.getElementById('policyModal');
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        };
+
+        /**
+         * Edits policy details (placeholder function).
+         * In a real application, this would navigate to an edit form or open an editable modal.
+         * @param {string} policyId - The ID of the policy to edit.
+         */
+        function editPolicy(policyId) {
+            showNotification(`Editing policy ${policyId} (functionality not implemented in this demo). ✏️`);
+            console.log(`Edit policy with ID: ${policyId}`);
+        }
+
+        /**
+         * Displays a temporary notification message on the screen.
+         * @param {string} message - The message to display.
+         */
+        function showNotification(message) {
+            const notification = document.getElementById('notification-container');
+            notification.textContent = message;
+            notification.classList.add('show');
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000); // Notification disappears after 3 seconds
+        }
+
+        /**
+         * Downloads a Chart.js chart as a PNG image.
+         * @param {string} chartId - The ID of the chart to download.
+         */
+        function downloadChart(chartId) {
+            const chart = charts[chartId];
+            if (chart) {
+                const link = document.createElement('a');
+                link.download = `${chartId}_chart.png`; // Set filename
+                link.href = chart.toBase64Image(); // Get chart image as base64 URL
+                link.click(); // Programmatically click the link to trigger download
+                showNotification(`Chart exported as ${link.download}! 📥`);
+            } else {
+                console.error(`Chart with ID '${chartId}' not found.`);
+                showNotification(`Error: Chart '${chartId}' not found for export. ❌`);
+            }
+        }
+
+        /**
+         * Refreshes a specific Chart.js chart.
+         * In a real application, this would typically involve re-fetching data.
+         * @param {string} chartId - The ID of the chart to refresh.
+         */
+        function refreshChart(chartId) {
+            const chart = charts[chartId];
+            if (chart) {
+                // In a real app, you would fetch new data here and update the chart.data
+                // then call chart.update(). For this demo, we just update.
+                chart.update(); // Re-render the chart with current data
+                showNotification(`${chartId} chart refreshed! 🔄`);
+            } else {
+                console.error(`Chart with ID '${chartId}' not found.`);
+                showNotification(`Error: Chart '${chartId}' not found for refresh. ❌`);
+            }
+        }
+
+        /**
+         * Refreshes the policy table data (placeholder function).
+         * In a real application, this would re-fetch and re-render table rows.
+         */
+        function refreshTable() {
+            // Simulate data refresh
+            showNotification('Policy table data refreshed! 🔄');
+            // In a real application, you would re-fetch data and rebuild the table body.
+        }
+
+        /**
+         * Exports the current data in the policy table to a CSV file.
+         */
+        function exportTable() {
+            const table = document.getElementById('policyTable');
+            let csv = [];
+            
+            // Get header row
+            const headerRow = document.querySelector('.data-table thead tr');
+            const headerCells = headerRow.querySelectorAll('th');
+            let headerText = [];
+            for (const cell of headerCells) {
+                headerText.push(`"${cell.textContent.trim().replace(/"/g, '""')}"`); // Quote and escape for CSV
+            }
+            csv.push(headerText.join(','));
+
+            // Get body rows
+            const rows = table.querySelectorAll('tr');
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                let rowData = [];
+                const cols = row.querySelectorAll('td');
+                // Iterate through columns, excluding the last "Operations" column
+                for (let j = 0; j < cols.length - 1; j++) { 
+                    rowData.push(`"${cols[j].textContent.trim().replace(/"/g, '""')}"`); // Quote and escape for CSV
+                }
+                csv.push(rowData.join(','));
+            }
+
+            const csvString = csv.join('\n');
+            const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'high-risk_policies.csv';
+            link.click(); // Trigger download
+            showNotification('Table data exported as CSV! 📊');
+        }
+
+        /**
+         * Toggles the display of AI predictions on the Monthly Premium Trends chart.
+         */
+        function togglePredictions() {
+            if (charts.trendChart) {
+                if (predictionsVisible) {
+                    // If predictions are visible, remove the prediction dataset
+                    charts.trendChart.data.datasets = charts.trendChart.data.datasets.slice(0, 1);
+                    // Reset labels to original if predictions added new ones
+                    charts.trendChart.data.labels = sampleData.trendChart.labels;
+                    showNotification('AI Predictions hidden. 🤖');
+                } else {
+                    // If predictions are hidden, add the prediction dataset
+                    const predictionData = [610, 640, 670, 700]; // Sample future data
+                    const predictionLabels = ['Sep', 'Oct', 'Nov', 'Dec'];
+                    
+                    // Extend existing labels with prediction labels
+                    charts.trendChart.data.labels = [...sampleData.trendChart.labels, ...predictionLabels];
+                    
+                    // Add the AI predictions dataset
+                    charts.trendChart.data.datasets.push({
+                        label: 'AI Predictions',
+                        data: [...sampleData.trendChart.datasets[0].data, ...predictionData],
+                        borderColor: '#8b5cf6',
+                        backgroundColor: 'rgba(139, 92, 246, 0.2)',
+                        borderDash: [5, 5], // Dashed line for predictions
+                        fill: false,
+                        tension: 0.4
+                    });
+                    
+                    showNotification('AI Predictions activated! 📈');
+                }
+                predictionsVisible = !predictionsVisible; // Toggle state
+                charts.trendChart.update(); // Update the chart to reflect changes
+            }
+        }
+    </script>
+</body>
+</html>
