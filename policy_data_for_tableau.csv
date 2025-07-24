@@ -1,0 +1,8 @@
+Policy_ID,Policy_Name,Category,Implementation_Year,Target_Group,Region,Budget_Allocated,Citizen_Satisfaction,Impact_Score
+P001,Digital Literacy Program,Education,2019,Youth,National,15000000,78,85
+P002,Healthcare Subsidy Plan,Health,2020,Low Income,Rural,25000000,82,91
+P003,Green Energy Initiative,Environment,2018,All,Urban,18000000,69,80
+P004,Skill Development Scheme,Employment,2021,Graduates,National,20000000,88,93
+P005,Smart City Mission,Infrastructure,2017,Urban Residents,Urban,30000000,74,76
+P006,Rural Electrification Project,Infrastructure,2016,Rural Households,Rural,12000000,65,72
+P007,Women Empowerment Drive,Social Welfare,2022,Women,National,17000000,89,95
