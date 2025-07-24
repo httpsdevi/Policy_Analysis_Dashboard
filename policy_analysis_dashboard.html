@@ -24,7 +24,7 @@
         .dashboard-container {
             max-width: 1400px;
             margin: 0 auto;
-            padding: 20px;
+            padding: 10px; /* Reduced from 20px */
         }
 
         /* Header Section */
@@ -32,8 +32,8 @@
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(15px);
             border-radius: 24px;
-            padding: 30px;
-            margin-bottom: 30px;
+            padding: 18px; /* Reduced from 30px */
+            margin-bottom: 18px; /* Reduced from 30px */
             box-shadow: 0 25px 50px rgba(0, 0, 0, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.2);
             position: relative;
@@ -208,8 +208,8 @@
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 25px;
-            margin-bottom: 30px;
+            gap: 15px; /* Reduced from 25px */
+            margin-bottom: 18px; /* Reduced from 30px */
         }
 
         .stat-card {
@@ -290,19 +290,21 @@
         .chart-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 30px;
-            margin-bottom: 30px;
+            gap: 18px; /* Reduced from 30px */
+            margin-bottom: 18px; /* Reduced from 30px */
         }
 
         .chart-container {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(15px);
             border-radius: 24px;
-            padding: 35px;
+            padding: 18px; /* Reduced from 35px */
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.2);
             transition: all 0.3s ease;
             position: relative;
+            /* Adjusted min-height */
+            min-height: 220px; /* Reduced from 350px */
         }
 
         .chart-container:hover {
@@ -343,6 +345,12 @@
 
         .full-width {
             grid-column: span 2;
+        }
+
+        /* IMPORTANT: Ensure canvas fills its container */
+        canvas {
+            width: 100% !important; 
+            height: 100% !important; /* This will make canvas fill the min-height of its parent */
         }
 
         /* Data Table */
@@ -474,8 +482,8 @@
         .insight-cards {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 25px;
-            margin-top: 30px;
+            gap: 15px; /* Reduced from 25px */
+            margin-top: 18px; /* Reduced from 30px */
         }
 
         .insight-card {
@@ -540,7 +548,7 @@
 
         /* Modal Styles */
         .modal {
-            display: none; /* Hidden by default */
+            display: none; /* Hidden by default - IMPORTANT */
             position: fixed; /* Stay in place */
             z-index: 1000; /* Sit on top */
             left: 0;
@@ -549,7 +557,7 @@
             height: 100%; /* Full height */
             background: rgba(0, 0, 0, 0.5); /* Black w/ opacity */
             backdrop-filter: blur(5px); /* Blur background */
-            display: flex; /* Use flexbox for centering */
+            /* display: flex; Removed to prevent auto-showing */
             align-items: center; /* Center vertically */
             justify-content: center; /* Center horizontally */
         }
@@ -563,6 +571,8 @@
             position: relative;
             animation: modalSlideIn 0.3s ease-out;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            max-height: 90vh; /* Limit modal height */
+            overflow-y: auto; /* Enable scrolling for long content */
         }
 
         @keyframes modalSlideIn {
@@ -710,7 +720,10 @@
             <p>Advanced Insurance Analytics | ML-Driven Risk Assessment | Real-time Decision Support</p>
             <div class="control-panel">
                 <div class="filter-header">
-                    <div class="filter-title">🎛️ Tableau-Style Filters</div>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div class="filter-title">🎛️ Tableau-Style Filters</div>
+                        <span class="tooltip" data-tooltip="Adjust filters to refine dashboard data.">ℹ️</span>
+                    </div>
                     <div style="display: flex; gap: 10px;">
                         <button class="reset-filters" onclick="resetAllFilters()">🔄 Reset All</button>
                         <button class="reset-filters" onclick="exportToTableau()" style="background: linear-gradient(135deg, #1f77b4, #2ca02c);">📊 Export to Tableau</button>
@@ -760,7 +773,7 @@
             <div class="stat-card tooltip" data-tooltip="Click to drill down into premium details" onclick="highlightCard(this)">
                 <div class="stat-value" style="color: #667eea;">$2.4B</div>
                 <div class="stat-label">Total Premium Volume</div>
-                <div class="stat-trend trend-up">� +12.3% vs last quarter</div>
+                <div class="stat-trend trend-up">📈 +12.3% vs last quarter</div>
             </div>
             <div class="stat-card tooltip" data-tooltip="Click to view retention analysis" onclick="highlightCard(this)">
                 <div class="stat-value" style="color: #10b981;">94.2%</div>
@@ -1104,7 +1117,10 @@
         // Call the initialization function when the window loads
         window.onload = function() {
             initializeCharts();
-            updateDashboard(); // Initial load of the dashboard to apply default filters
+            // Add a small delay for updateDashboard to ensure charts are fully initialized/rendered
+            setTimeout(() => {
+                updateDashboard();
+            }, 50); // Small delay, e.g., 50 milliseconds
         };
 
         /**
@@ -1201,23 +1217,83 @@
             const modal = document.getElementById('policyModal');
             const modalContent = document.getElementById('modalContent');
             
-            // Show loading state
-            modalContent.innerHTML = `<p>Loading details for <strong>${policyId}</strong>... <span class="loading"></span></p>`;
+            // Show loading state and add the Generate Summary button
+            modalContent.innerHTML = `
+                <h3>Details for Policy ID: ${policyId}</h3>
+                <p>Loading policy details... <span class="loading"></span></p>
+                <button class="insight-action" style="margin-top: 20px;" onclick="generatePolicySummary('${policyId}')">Generate Policy Summary ✨</button>
+                <div id="policySummaryOutput" style="margin-top: 20px; padding: 15px; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0; display: none;"></div>
+            `;
             modal.style.display = 'flex'; // Use flex to center
 
-            // Simulate fetching policy data from an API
+            // Simulate fetching policy data from an-API
             setTimeout(() => {
-                modalContent.innerHTML = `
-                    <h3>Details for Policy ID: ${policyId}</h3>
-                    <p><strong>Status:</strong> Active</p>
-                    <p><strong>Policy Type:</strong> Term Life</p>
-                    <p><strong>Start Date:</strong> Jan 15, 2024</p>
-                    <p><strong>Policyholder:</strong> John Doe</p>
-                    <p><strong>Premium:</strong> $75,000</p>
-                    <p><strong>Risk Assessment:</strong> High (8.7)</p>
-                    <p><strong>Recommendations:</strong> Contact customer to review policy options and offer retention incentives. Consider a personalized financial review.</p>
+                modalContent.querySelector('p').innerHTML = `
+                    <strong>Status:</strong> Active<br>
+                    <strong>Policy Type:</strong> Term Life<br>
+                    <strong>Start Date:</strong> Jan 15, 2024<br>
+                    <strong>Policyholder:</strong> John Doe<br>
+                    <strong>Premium:</strong> $75,000<br>
+                    <strong>Risk Assessment:</strong> High (8.7)<br>
+                    <strong>Recommendations:</strong> Contact customer to review policy options and offer retention incentives. Consider a personalized financial review.
                 `;
             }, 1000); // Simulate network delay
+        }
+
+        /**
+         * Generates a policy summary using the Gemini API.
+         * @param {string} policyId - The ID of the policy to summarize.
+         */
+        async function generatePolicySummary(policyId) {
+            const summaryOutputDiv = document.getElementById('policySummaryOutput');
+            summaryOutputDiv.innerHTML = '<p>Generating summary... <span class="loading"></span></p>';
+            summaryOutputDiv.style.display = 'block';
+
+            // Simulate fetching comprehensive policy data for LLM
+            const policyDetails = {
+                id: policyId,
+                status: 'Active',
+                type: 'Term Life',
+                startDate: 'Jan 15, 2024',
+                policyholder: 'John Doe',
+                premium: '$75,000',
+                riskAssessment: 'High (8.7)',
+                recommendations: 'Contact customer to review policy options and offer retention incentives. Consider a personalized financial review.',
+                claimsHistory: 'One minor claim in 2023 for $5,000 (dental). No major claims.'
+            };
+
+            const prompt = `Summarize the following insurance policy details concisely, highlighting key terms, benefits, and risks:\n\nPolicy ID: ${policyDetails.id}\nStatus: ${policyDetails.status}\nPolicy Type: ${policyDetails.type}\nStart Date: ${policyDetails.startDate}\nPolicyholder: ${policyDetails.policyholder}\nPremium: ${policyDetails.premium}\nRisk Assessment: ${policyDetails.riskAssessment}\nRecommendations: ${policyDetails.recommendations}\nClaims History: ${policyDetails.claimsHistory}`;
+
+            try {
+                let chatHistory = [];
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+                const payload = { contents: chatHistory };
+                const apiKey = ""; // Canvas will automatically provide the API key
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const text = result.candidates[0].content.parts[0].text;
+                    summaryOutputDiv.innerHTML = `<h4>AI-Generated Summary:</h4><p>${text}</p>`;
+                    showNotification('Policy summary generated! ✨');
+                } else {
+                    summaryOutputDiv.innerHTML = '<p style="color: red;">Error: Could not generate summary. No valid response from AI.</p>';
+                    showNotification('Failed to generate summary. ❌');
+                }
+            } catch (error) {
+                console.error('Error calling Gemini API:', error);
+                summaryOutputDiv.innerHTML = `<p style="color: red;">Error generating summary: ${error.message}</p>`;
+                showNotification('Error during summary generation. ❌');
+            }
         }
 
         /**
@@ -1226,13 +1302,19 @@
         function closeModal() {
             const modal = document.getElementById('policyModal');
             modal.style.display = 'none';
+            // Clear summary output when modal closes
+            const summaryOutputDiv = document.getElementById('policySummaryOutput');
+            if (summaryOutputDiv) {
+                summaryOutputDiv.style.display = 'none';
+                summaryOutputDiv.innerHTML = '';
+            }
         }
 
         // Close modal when clicking outside of the modal content
         window.onclick = function(event) {
             const modal = document.getElementById('policyModal');
             if (event.target == modal) {
-                modal.style.display = 'none';
+                closeModal(); // Use the new closeModal function
             }
         };
 
@@ -1355,7 +1437,7 @@
                     charts.trendChart.data.labels = sampleData.trendChart.labels;
                     showNotification('AI Predictions hidden. 🤖');
                 } else {
-                    // If predictions are hidden, add the prediction dataset
+                    // If predictions is hidden, add the prediction dataset
                     const predictionData = [610, 640, 670, 700]; // Sample future data
                     const predictionLabels = ['Sep', 'Oct', 'Nov', 'Dec'];
                     
